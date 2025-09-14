@@ -6,6 +6,7 @@ import { Reservation, ReservationSchema } from './entities/reservations.entity';
 import { Concert, ConcertSchema } from '../concerts/entities/concert.entity';
 import { UsersModule } from '../users/users.module';
 import { User, UserSchema } from '../users/entities/user.entity';
+import { Transaction, TransactionSchema } from './entities/transactions.entity';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { User, UserSchema } from '../users/entities/user.entity';
       { name: Reservation.name, schema: ReservationSchema },
       { name: Concert.name, schema: ConcertSchema },
       { name: User.name, schema: UserSchema },
+      { name: Transaction.name, schema: TransactionSchema },
     ]),
     forwardRef(() => UsersModule)
   ],

@@ -42,17 +42,17 @@ export class ConcertsService {
 
   const concertCount = await this.concertModel.countDocuments(query).exec();
 
-  if (!userId) {
-    return {
-      data: listConcert,
-      meta: {
-        total: concertCount,
-        page,
-        limit,
-        totalPages: Math.ceil(concertCount / limit),
-      },
-    };
-  }
+  // if (!userId) {
+  //   return {
+  //     data: listConcert,
+  //     meta: {
+  //       total: concertCount,
+  //       page,
+  //       limit,
+  //       totalPages: Math.ceil(concertCount / limit),
+  //     },
+  //   };
+  // }
 
   const reservations = await this.reserveModel
     .find({ userId: new Types.ObjectId(userId) })

@@ -45,18 +45,15 @@ export class ConcertsController {
   @Get('list')
   async findAll(
     @Req() req: Request,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
   ) {
     const userId = req.user?.id;
     const role = req.user?.role;
 
-    if (role === 'ADMIN') {
-      return this.concertsService.findAll(undefined, page, limit);
-    }
-
     return this.concertsService.findAll(userId, page, limit);
   }
+
 
   @Get(':id')
   async findOne(@Param('id') id: string) {

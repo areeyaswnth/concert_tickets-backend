@@ -6,6 +6,7 @@ import { Concert, ConcertDocument } from '../../../modules/concerts/entities/con
 import { ReservationStatus } from '@common/enum/reserve-status.enum';
 import { ConcertStatus } from '../../../common/enum/concert-status.enum';
 import { User, UserDocument } from '../../../modules/users/entities/user.entity';
+import { Transaction, TransactionAction, TransactionDocument } from '../entities/transactions.entity';
 
 @Injectable()
 export class ReservationsService {
@@ -13,10 +14,10 @@ export class ReservationsService {
     @InjectModel(Reservation.name) private reserveModel: Model<ReserveDocument>,
     @InjectModel(Concert.name) private concertModel: Model<ConcertDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+     @InjectModel(Transaction.name) private transactionModel: Model<TransactionDocument>,
+
   ) { }
-
-  async reserveSeat(userId: string, concertId: string) {
-
+ async reserveSeat(userId: string, concertId: string) {
     const user = await this.userModel.findById(userId);
     if (!user) throw new NotFoundException('User not found');
 
@@ -29,7 +30,7 @@ export class ReservationsService {
 
     const reservedCount = await this.reserveModel.countDocuments({
       concertId,
-      status: { $ne: 'CANCELLED' },
+      status: { $ne: ReservationStatus.CANCELLED },
     });
 
     if (reservedCount >= concert.maxSeats) {
@@ -37,16 +38,30 @@ export class ReservationsService {
     }
 
     const existing = await this.reserveModel.findOne({ userId, concertId });
-    if (existing) throw new BadRequestException('User already reserved a seat');
+    if (existing && existing.status === ReservationStatus.CANCELLED) {
+      throw new BadRequestException('Cannot reserve again. User has previously cancelled this seat.');
+    }
+    if (existing && existing.status !== ReservationStatus.CANCELLED) {
+      throw new BadRequestException('User already has a reservation.');
+    }
 
     const reserve = new this.reserveModel({ userId, concertId });
     await reserve.save();
     await concert.save();
 
+    // สร้าง transaction
+    const transaction = new this.transactionModel({
+      reservationId: reserve._id,
+      username: user.name,
+      concertName: concert.name,
+      action: TransactionAction.CONFIRMED,
+    });
+    await transaction.save();
+
     return reserve;
   }
 
-  async cancelReserve(userId: string, concertId: string) {
+async cancelReserve(userId: string, concertId: string) {
     const user = await this.userModel.findById(userId);
     if (!user) throw new NotFoundException('User not found');
 
@@ -55,8 +70,19 @@ export class ReservationsService {
 
     const reserve = await this.reserveModel.findOne({ userId, concertId });
     if (!reserve) throw new NotFoundException('Reservation not found');
-    reserve.status = ReservationStatus.CANCELLED
+
+    reserve.status = ReservationStatus.CANCELLED;
     await reserve.save();
+
+    // สร้าง transaction
+    const transaction = new this.transactionModel({
+      reservationId: reserve._id,
+      username: user.name,
+      concertName: concert.name,
+      action: TransactionAction.CANCELLED,
+    });
+    await transaction.save();
+
     return { message: 'Reservation cancelled', reservation: reserve };
   }
 

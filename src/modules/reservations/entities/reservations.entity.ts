@@ -4,7 +4,7 @@ import { ReservationStatus } from '../../../common/enum/reserve-status.enum';
 
 export type ReserveDocument = Reservation & Document;
 
-@Schema()
+@Schema({ timestamps: true })
 export class Reservation {
   @Prop({ type: Types.ObjectId, required: true, ref: 'User' })
   userId: Types.ObjectId;
@@ -21,6 +21,10 @@ export class Reservation {
     default: ReservationStatus.CONFIRMED,
   })
   status: ReservationStatus;
+
+  // soft delete
+  @Prop({ type: Boolean, default: false })
+  deleted: boolean;
 }
 
 export const ReservationSchema = SchemaFactory.createForClass(Reservation);
