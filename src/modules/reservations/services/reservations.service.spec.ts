@@ -151,9 +151,9 @@ describe('ReservationsService', () => {
       status: ReservationStatus.CONFIRMED,
     } as ReserveDocument);
 
-    const res = await service.getListReservation(1, 10); 
+    const res = await service.getListReservation(1, 10);
 
-    expect(res.data).toHaveLength(1); 
+    expect(res.data).toHaveLength(1);
 
     const concertData = res.data[0].concertId as unknown as ConcertDocument;
     expect(concertData.name).toBe('C6');
@@ -186,7 +186,7 @@ describe('ReservationsService', () => {
     const concert = await concertModel.create({ name: 'Concert', description: 'D', maxSeats: 50 } as ConcertDocument);
 
     jest.spyOn(reserveModel, 'findOne').mockResolvedValueOnce(null);
-    const concertId= String(concert._id)
+    const concertId = String(concert._id)
     await expect(service.cancelReserve(user._id.toString(), concertId.toString()))
       .rejects.toThrow(new NotFoundException('Reservation not found'));
   });
@@ -208,53 +208,53 @@ describe('ReservationsService', () => {
     expect(toIdString(list[0].concertId._id)).toBe(toIdString(concert._id));
   });
   describe('getListReservation', () => {
-  it('should return paginated reservations with populated user and concert', async () => {
-    const user1 = await userModel.create({ name: 'User1', email: 'u1@test.com', password: '123456' } as UserDocument);
-    const user2 = await userModel.create({ name: 'User2', email: 'u2@test.com', password: '123456' } as UserDocument);
+    it('should return paginated reservations with populated user and concert', async () => {
+      const user1 = await userModel.create({ name: 'User1', email: 'u1@test.com', password: '123456' } as UserDocument);
+      const user2 = await userModel.create({ name: 'User2', email: 'u2@test.com', password: '123456' } as UserDocument);
 
-    const concert1 = await concertModel.create({ name: 'Concert1', description: 'D1', maxSeats: 50 } as ConcertDocument);
-    const concert2 = await concertModel.create({ name: 'Concert2', description: 'D2', maxSeats: 50 } as ConcertDocument);
+      const concert1 = await concertModel.create({ name: 'Concert1', description: 'D1', maxSeats: 50 } as ConcertDocument);
+      const concert2 = await concertModel.create({ name: 'Concert2', description: 'D2', maxSeats: 50 } as ConcertDocument);
 
-    await reserveModel.create({ userId: user1._id, concertId: concert1._id, status: 'CONFIRMED' } as ReserveDocument);
-    await reserveModel.create({ userId: user2._id, concertId: concert2._id, status: 'CONFIRMED' } as ReserveDocument);
+      await reserveModel.create({ userId: user1._id, concertId: concert1._id, status: 'CONFIRMED' } as ReserveDocument);
+      await reserveModel.create({ userId: user2._id, concertId: concert2._id, status: 'CONFIRMED' } as ReserveDocument);
 
-    const result = await service.getListReservation(1, 1);
+      const result = await service.getListReservation(1, 1);
 
-    expect(result.data).toHaveLength(1);
-    expect(result.meta.total).toBe(2);
-    expect(result.meta.page).toBe(1);
-    expect(result.meta.limit).toBe(1);
-    expect(result.meta.totalPages).toBe(2);
-const resItem = result.data[0];
+      expect(result.data).toHaveLength(1);
+      expect(result.meta.total).toBe(2);
+      expect(result.meta.page).toBe(1);
+      expect(result.meta.limit).toBe(1);
+      expect(result.meta.totalPages).toBe(2);
+      const resItem = result.data[0];
 
-const userPopulated = resItem.userId as unknown as { name: string };
-const concertPopulated = resItem.concertId as unknown as { name: string };
+      const userPopulated = resItem.userId as unknown as { name: string };
+      const concertPopulated = resItem.concertId as unknown as { name: string };
 
-expect(userPopulated.name).toBeDefined();
-expect(concertPopulated.name).toBeDefined();
+      expect(userPopulated.name).toBeDefined();
+      expect(concertPopulated.name).toBeDefined();
 
+    });
+
+    it('should default to page=1 and limit=10 if invalid', async () => {
+      const result = await service.getListReservation(-5, -10);
+
+      expect(result.meta.page).toBe(1);
+      expect(result.meta.limit).toBe(10);
+    });
+
+    it('should return correct totalPages when total < limit', async () => {
+      await reserveModel.deleteMany({});
+
+      const user = await userModel.create({ name: 'SingleUser', email: 'single@test.com', password: '123456' } as UserDocument);
+      const concert = await concertModel.create({ name: 'SingleConcert', description: 'D', maxSeats: 50 } as ConcertDocument);
+
+      await reserveModel.create({ userId: user._id, concertId: concert._id, status: 'CONFIRMED' } as ReserveDocument);
+
+      const result = await service.getListReservation(1, 10);
+      expect(result.meta.totalPages).toBe(1);
+      expect(result.data).toHaveLength(1);
+    });
   });
-
-  it('should default to page=1 and limit=10 if invalid', async () => {
-    const result = await service.getListReservation(-5, -10);
-
-    expect(result.meta.page).toBe(1);
-    expect(result.meta.limit).toBe(10);
-  });
-
-  it('should return correct totalPages when total < limit', async () => {
-    await reserveModel.deleteMany({});
-
-    const user = await userModel.create({ name: 'SingleUser', email: 'single@test.com', password: '123456' } as UserDocument);
-    const concert = await concertModel.create({ name: 'SingleConcert', description: 'D', maxSeats: 50 } as ConcertDocument);
-
-    await reserveModel.create({ userId: user._id, concertId: concert._id, status: 'CONFIRMED' } as ReserveDocument);
-
-    const result = await service.getListReservation(1, 10);
-    expect(result.meta.totalPages).toBe(1);
-    expect(result.data).toHaveLength(1);
-  });
-});
 
 
   it('should throw BadRequestException if user already reserved', async () => {

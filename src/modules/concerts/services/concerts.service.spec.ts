@@ -46,7 +46,7 @@ describe('ConcertsService', () => {
         },
         {
           provide: getModelToken(User.name),
-          useValue: mongoose.model(User.name, UserSchema), 
+          useValue: mongoose.model(User.name, UserSchema),
         },
       ],
     }).compile();
@@ -54,7 +54,7 @@ describe('ConcertsService', () => {
     service = module.get<ConcertsService>(ConcertsService);
     concertModel = module.get<Model<ConcertDocument>>(getModelToken(Concert.name));
     reserveModel = module.get<Model<ReserveDocument>>(getModelToken(Reservation.name));
-    userModel = module.get<Model<UserDocument>>(getModelToken(User.name)); 
+    userModel = module.get<Model<UserDocument>>(getModelToken(User.name));
 
   });
 
@@ -71,7 +71,7 @@ describe('ConcertsService', () => {
   it('should create a concert', async () => {
     const dto: CreateConcertDto = { name: 'Concert 1', description: 'Desc', maxSeats: 100 };
     const concert = await service.create(dto);
-    expect((concert._id as Types.ObjectId).toString()).toBeDefined();  
+    expect((concert._id as Types.ObjectId).toString()).toBeDefined();
     expect(concert.name).toBe('Concert 1');
   });
 
@@ -80,7 +80,7 @@ describe('ConcertsService', () => {
       name: 'Concert 2',
       description: 'Desc',
       maxSeats: 50,
-    } as ConcertDocument); 
+    } as ConcertDocument);
     const found = await service.findOne((created._id as Types.ObjectId).toString());
     expect(found.name).toBe('Concert 2');
   });
@@ -90,7 +90,7 @@ describe('ConcertsService', () => {
       name: 'Concert 3',
       description: 'Desc',
       maxSeats: 30,
-    } as ConcertDocument); 
+    } as ConcertDocument);
     const dto: UpdateConcertDto = { name: 'Updated', description: 'New Desc', maxSeats: 40 };
     const updated = await service.update((created._id as Types.ObjectId).toString(), dto);
     expect(updated.name).toBe('Updated');
@@ -147,7 +147,7 @@ describe('ConcertsService', () => {
       await concertModel.create({ name: `Concert ${i}`, description: 'desc', maxSeats: 100 } as ConcertDocument);
     }
 
-    const result = await service.findAll(undefined, 2, 5); 
+    const result = await service.findAll(undefined, 2, 5);
 
     expect(result.data).toHaveLength(5);
     expect(result.meta.total).toBe(15);
@@ -167,7 +167,7 @@ describe('ConcertsService', () => {
       userId: new Types.ObjectId(userId),
       status: ReservationStatus.CONFIRMED,
       reservedAt: new Date(),
-    } as unknown as ReserveDocument); 
+    } as unknown as ReserveDocument);
 
     const result = await service.findAll(userId, 1, 10);
 
@@ -193,7 +193,7 @@ describe('ConcertsService', () => {
 
     const result = await service.findAll(undefined, -1, -5);
 
-    expect(result.data).toHaveLength(10); 
+    expect(result.data).toHaveLength(10);
     expect(result.meta.page).toBe(1);
     expect(result.meta.limit).toBe(10);
   });

@@ -11,17 +11,17 @@ import { User, UserDocument } from '@modules/users/entities/user.entity';
 
 @Injectable()
 export class ConcertsService {
-    constructor(
-        @InjectModel(Concert.name) private concertModel: Model<ConcertDocument>,
-        @InjectModel(Reservation.name) private reserveModel: Model<ReserveDocument>,
-        @InjectModel(User.name) private userModel: Model<UserDocument>,
+  constructor(
+    @InjectModel(Concert.name) private concertModel: Model<ConcertDocument>,
+    @InjectModel(Reservation.name) private reserveModel: Model<ReserveDocument>,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
 
-    ) { }
+  ) { }
 
-    async create(dto: CreateConcertDto) {
-        const concert = new this.concertModel(dto);
-        return concert.save();
-    }
+  async create(dto: CreateConcertDto) {
+    const concert = new this.concertModel(dto);
+    return concert.save();
+  }
   async findAll(userId?: string, page = 1, limit = 10) {
   page = Number(page);
   limit = Number(limit);
@@ -31,13 +31,16 @@ export class ConcertsService {
 
   const skip = (page - 1) * limit;
 
-  const listConcert = await this.concertModel
-      .find()
-      .skip(skip)
-      .limit(limit)
-      .exec();
+  // filter deleted = false
+  const query = { deleted: false } as any;
 
-  const concertCount = await this.concertModel.countDocuments().exec();
+  const listConcert = await this.concertModel
+    .find(query)
+    .skip(skip)
+    .limit(limit)
+    .exec();
+
+  const concertCount = await this.concertModel.countDocuments(query).exec();
 
   if (!userId) {
     return {
@@ -52,9 +55,9 @@ export class ConcertsService {
   }
 
   const reservations = await this.reserveModel
-      .find({ userId: new Types.ObjectId(userId) })
-      .select('concertId _id status')
-      .exec();
+    .find({ userId: new Types.ObjectId(userId) })
+    .select('concertId _id status')
+    .exec();
 
   const reservationMap = new Map(
     reservations.map((r) => [r.concertId.toString(), r])
@@ -82,48 +85,51 @@ export class ConcertsService {
 }
 
 
-    async findOne(id: string) {
-        const concert = await this.concertModel.findById(id).exec();
-        if (!concert) throw new NotFoundException('Concert not found');
-        return concert;
-    }
 
-    async update(id: string, dto: UpdateConcertDto) {
-        const updated = await this.concertModel.findByIdAndUpdate(id, dto, { new: true });
-        if (!updated) throw new NotFoundException('Concert not found');
-        return updated;
-    }
+  async findOne(id: string) {
+    const concert = await this.concertModel.findById(id).exec();
+    if (!concert) throw new NotFoundException('Concert not found');
+    return concert;
+  }
 
-    async cancel(id: string, status: ConcertStatus = ConcertStatus.CANCELED) {
-        const concert = await this.concertModel.findById(id).exec();
+  async update(id: string, dto: UpdateConcertDto) {
+    const updated = await this.concertModel.findByIdAndUpdate(id, dto, { new: true });
+    if (!updated) throw new NotFoundException('Concert not found');
+    return updated;
+  }
 
-        if (!concert) {
-            throw new NotFoundException(`Concert with id ${id} not found`);
-        }
+async cancel(id: string, status: ConcertStatus = ConcertStatus.CANCELED) {
+  const concert = await this.concertModel.findById(id).exec();
 
-        if (concert.status === ConcertStatus.CANCELED) {
-            throw new BadRequestException(`Concert with id ${id} is already cancelled`);
-        }
+  if (!concert) {
+    throw new NotFoundException(`Concert with id ${id} not found`);
+  }
 
-        concert.status = status;
-        await concert.save();
+  if (concert.deleted || concert.status === ConcertStatus.CANCELED) {
+    throw new BadRequestException(`Concert with id ${id} is already cancelled`);
+  }
 
-        const result = await this.reserveModel.updateMany(
-            { concertId: new Types.ObjectId(id), status: ReservationStatus.CONFIRMED },
-            { $set: { status: ReservationStatus.CANCELLED } }
-        );
+  // soft delete
+  concert.status = status;
+  concert.deleted = true;
+  await concert.save();
 
-        return {
-            message: `Concert ${id} and its reservations have been canceled`,
-            concert,
-            reservationsUpdatedCount: result.modifiedCount,
-        };
-    }
+  const result = await this.reserveModel.updateMany(
+    { concertId: new Types.ObjectId(id), status: ReservationStatus.CONFIRMED },
+    { $set: { status: ReservationStatus.CANCELLED } }
+  );
+
+  return {
+    message: `Concert ${id} soft deleted and reservations cancelled`,
+    concert,
+    reservationsUpdatedCount: result.modifiedCount,
+  };
+}
 
 
-    async remove(id: string) {
-        const deleted = await this.concertModel.findByIdAndDelete(id);
-        if (!deleted) throw new NotFoundException('Concert not found');
-        return { message: 'Deleted successfully' };
-    }
+  async remove(id: string) {
+    const deleted = await this.concertModel.findByIdAndDelete(id);
+    if (!deleted) throw new NotFoundException('Concert not found');
+    return { message: 'Deleted successfully' };
+  }
 }

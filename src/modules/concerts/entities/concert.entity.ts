@@ -12,16 +12,18 @@ export class Concert {
   @Prop()
   description: string;
 
-  @Prop({default:1})
+  @Prop({ default: 1 })
   maxSeats: number;
-    @Prop({ 
+
+  @Prop({ 
     type: String, 
     enum: ConcertStatus, 
     default: ConcertStatus.AVAILABLE
   })
   status: ConcertStatus;
-  
 
+  @Prop({ default: false })
+  deleted: boolean; // <-- soft delete flag
 }
 
 export const ConcertSchema = SchemaFactory.createForClass(Concert);

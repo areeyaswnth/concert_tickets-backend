@@ -7,13 +7,13 @@ import { UserRole } from '../../../common/enum/user-role.enum';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('api/v1/reserve')
 export class ReservationsController {
-  constructor(private readonly reservationsService: ReservationsService) {}
-  
+  constructor(private readonly reservationsService: ReservationsService) { }
+
   @Post(':userId/:concertId')
   async reserveSeat(@Param('userId') userId: string, @Param('concertId') concertId: string) {
     return this.reservationsService.reserveSeat(userId, concertId);
   }
-//  @Roles(UserRole.ADMIN)
+  //  @Roles(UserRole.ADMIN)
   @Delete(':userId/:concertId')
   async cancelReserve(@Param('userId') userId: string, @Param('concertId') concertId: string) {
     return this.reservationsService.cancelReserve(userId, concertId);
@@ -21,11 +21,11 @@ export class ReservationsController {
   @Roles(UserRole.ADMIN)
   @Get('dashboard')
   async getDashboardStats() {
-  return this.reservationsService.getDashboardStats();
+    return this.reservationsService.getDashboardStats();
   }
   @Roles(UserRole.ADMIN)
   @Get('')
- async listReservation(
+  async listReservation(
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
