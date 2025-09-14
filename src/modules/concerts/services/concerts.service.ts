@@ -22,7 +22,7 @@ export class ConcertsService {
     const concert = new this.concertModel(dto);
     return concert.save();
   }
-  async findAll(userId?: string, page = 1, limit = 10) {
+async findAll(userId?: string, page = 1, limit = 10) {
   page = Number(page);
   limit = Number(limit);
 
@@ -42,20 +42,13 @@ export class ConcertsService {
 
   const concertCount = await this.concertModel.countDocuments(query).exec();
 
-  // if (!userId) {
-  //   return {
-  //     data: listConcert,
-  //     meta: {
-  //       total: concertCount,
-  //       page,
-  //       limit,
-  //       totalPages: Math.ceil(concertCount / limit),
-  //     },
-  //   };
-  // }
+  const reservationQuery: any = { deleted: false };
+  if (userId) {
+    reservationQuery.userId = new Types.ObjectId(userId); // กรองเฉพาะ user นี้
+  }
 
   const reservations = await this.reserveModel
-    .find({ userId: new Types.ObjectId(userId) })
+    .find(reservationQuery)
     .select('concertId _id status')
     .exec();
 
@@ -98,33 +91,42 @@ export class ConcertsService {
     return updated;
   }
 
-async cancel(id: string, status: ConcertStatus = ConcertStatus.CANCELED) {
-  const concert = await this.concertModel.findById(id).exec();
+  async cancel(id: string, status: ConcertStatus = ConcertStatus.CANCELED) {
+    const concert = await this.concertModel.findById(id).exec();
 
-  if (!concert) {
-    throw new NotFoundException(`Concert with id ${id} not found`);
+    if (!concert) {
+      throw new NotFoundException(`Concert with id ${id} not found`);
+    }
+
+    if (concert.deleted || concert.status === ConcertStatus.CANCELED) {
+      throw new BadRequestException(`Concert with id ${id} is already cancelled`);
+    }
+
+    // soft delete
+    concert.status = status;
+    concert.deleted = true;
+    await concert.save();
+
+    const result = await this.reserveModel.updateMany(
+
+      {
+        concertId: new Types.ObjectId(id),
+        status: ReservationStatus.CONFIRMED
+      },
+      {
+        $set: {
+          status: ReservationStatus.CANCELLED,
+          deleted: true,
+        }
+      }
+    );
+
+    return {
+      message: `Concert ${id} soft deleted and reservations cancelled`,
+      concert,
+      reservationsUpdatedCount: result.modifiedCount,
+    };
   }
-
-  if (concert.deleted || concert.status === ConcertStatus.CANCELED) {
-    throw new BadRequestException(`Concert with id ${id} is already cancelled`);
-  }
-
-  // soft delete
-  concert.status = status;
-  concert.deleted = true;
-  await concert.save();
-
-  const result = await this.reserveModel.updateMany(
-    { concertId: new Types.ObjectId(id), status: ReservationStatus.CONFIRMED },
-    { $set: { status: ReservationStatus.CANCELLED } }
-  );
-
-  return {
-    message: `Concert ${id} soft deleted and reservations cancelled`,
-    concert,
-    reservationsUpdatedCount: result.modifiedCount,
-  };
-}
 
 
   async remove(id: string) {

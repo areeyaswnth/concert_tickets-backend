@@ -29,9 +29,31 @@ export class ReservationsController {
   async getDashboardStats() {
     return this.reservationsService.getDashboardStats();
   }
-  @Get('')
-  async listReservation(
-    @Req() req: AuthRequest, // <-- ใช้ interface ใหม่
+  // @Get('')
+  // async listReservation(
+  //   @Req() req: AuthRequest, // <-- ใช้ interface ใหม่
+  //   @Query('page') page?: number,
+  //   @Query('limit') limit?: number,
+  //   @Query('admin') admin?: string,
+  // ) {
+  //   const userId = req.user?.id;
+  //   const isAdmin = admin === 'true';
+
+  //   if (isAdmin) {
+  //     return this.reservationsService.getListReservation(page, limit);
+  //   } else {
+  //     if (!userId) {
+  //       throw new BadRequestException('User not found');
+  //     }
+  //     return this.reservationsService.getUserReservations(userId);
+  //   }
+  // }
+
+
+
+ @Get('transactions')
+  async listTransactions(
+    @Req() req: AuthRequest,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
     @Query('admin') admin?: string,
@@ -40,21 +62,14 @@ export class ReservationsController {
     const isAdmin = admin === 'true';
 
     if (isAdmin) {
-      return this.reservationsService.getListReservation(page, limit);
+      return this.reservationsService.getAllTransactions(page, limit);
     } else {
       if (!userId) {
         throw new BadRequestException('User not found');
       }
-      return this.reservationsService.getUserReservations(userId);
+      return this.reservationsService.getUserTransactions(userId, page, limit);
     }
   }
-
-  @Get(':userId')
-  async getUserReservations(@Param('userId') userId: string) {
-    return this.reservationsService.getUserReservations(userId);
-  }
-
-
 
 
 }

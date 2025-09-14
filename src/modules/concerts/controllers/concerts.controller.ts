@@ -49,7 +49,6 @@ export class ConcertsController {
     @Query('limit') limit = 10,
   ) {
     const userId = req.user?.id;
-    const role = req.user?.role;
 
     return this.concertsService.findAll(userId, page, limit);
   }

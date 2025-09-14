@@ -60,31 +60,38 @@ export class ReservationsService {
 
     return reserve;
   }
-
 async cancelReserve(userId: string, concertId: string) {
-    const user = await this.userModel.findById(userId);
-    if (!user) throw new NotFoundException('User not found');
+  const user = await this.userModel.findById(userId);
+  if (!user) throw new NotFoundException('User not found');
 
-    const concert = await this.concertModel.findById(concertId);
-    if (!concert) throw new NotFoundException('Concert not found');
+  const concert = await this.concertModel.findById(concertId);
+  if (!concert) throw new NotFoundException('Concert not found');
 
-    const reserve = await this.reserveModel.findOne({ userId, concertId });
-    if (!reserve) throw new NotFoundException('Reservation not found');
+  // หา reservation เดิม
+  const reserve = await this.reserveModel.findOne({ userId, concertId });
+  if (!reserve) throw new NotFoundException('Reservation not found');
 
-    reserve.status = ReservationStatus.CANCELLED;
-    await reserve.save();
-
-    // สร้าง transaction
-    const transaction = new this.transactionModel({
-      reservationId: reserve._id,
-      username: user.name,
-      concertName: concert.name,
-      action: TransactionAction.CANCELLED,
-    });
-    await transaction.save();
-
-    return { message: 'Reservation cancelled', reservation: reserve };
+  // ถ้าเคย cancel แล้วก็ return ข้อมูลเดิม
+  if (reserve.status === ReservationStatus.CANCELLED) {
+    return { message: 'Reservation already cancelled', reservation: reserve };
   }
+
+  // เปลี่ยน status เป็น CANCELLED
+  reserve.status = ReservationStatus.CANCELLED;
+  await reserve.save();
+
+  // สร้าง transaction อ้างอิง reservation เดิม
+  const transaction = new this.transactionModel({
+    reservationId: reserve._id,
+    username: user.name,
+    concertName: concert.name,
+    action: TransactionAction.CANCELLED,
+  });
+  await transaction.save();
+
+  return { message: 'Reservation cancelled', reservation: reserve };
+}
+
 
 
   async getUserReservations(userId: string) {
@@ -120,8 +127,23 @@ async cancelReserve(userId: string, concertId: string) {
       },
     };
   }
+  
 
+async getUserTransactions(userId: string, page = 1, limit = 10) {
+  return this.transactionModel
+    .find({ createdBy: userId }) // หรือใช้ { username: ... } ถ้า schema ไม่มี createdBy
+    .skip((page - 1) * limit)
+    .limit(limit)
+    .exec();
+}
 
+async getAllTransactions(page = 1, limit = 10) {
+  return this.transactionModel
+    .find()
+    .skip((page - 1) * limit)
+    .limit(limit)
+    .exec();
+}
   async getDashboardStats() {
     const concerts = await this.concertModel.find().exec();
     const totalSeats = concerts.reduce((sum, c) => sum + (c.maxSeats ?? 0), 0);
