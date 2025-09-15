@@ -45,9 +45,7 @@ export class TransactionsService {
     async getUserTransactions(userId: string, page = 1, limit = 10) {
         const skip = (page - 1) * limit;
         const total = await this.transactionModel.countDocuments({ userId });
-        // if (total === 0) {
-        //     throw new NotFoundException('No transactions found for this user');
-        // }
+ 
 
         const transactions = await this.transactionModel
             .find({ userId })

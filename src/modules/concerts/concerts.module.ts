@@ -15,10 +15,10 @@ import { TransactionsModule } from '@modules/transaction/transactions.module';
       { name: User.name, schema: UserSchema },
     ]),
     forwardRef(() => UsersModule),
-    forwardRef(() => TransactionsModule), // 👈 import transactions
+    forwardRef(() => TransactionsModule),
   ],
   controllers: [ConcertsController],
   providers: [ConcertsService],
-  exports: [ConcertsService], // 👈 เผื่อ module อื่นเรียกใช้
+  exports: [ConcertsService], 
 })
 export class ConcertsModule {}

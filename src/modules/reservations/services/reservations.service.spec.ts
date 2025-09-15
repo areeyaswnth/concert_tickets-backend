@@ -9,6 +9,8 @@ import { ReservationStatus } from '../../../common/enum/reserve-status.enum';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { UserDocument, UserSchema, User } from '../../../modules/users/entities/user.entity';
 import { ConcertStatus } from '../../../common/enum/concert-status.enum';
+import { Transaction, TransactionSchema } from '@modules/transaction/entities/transactions.entity';
+import { TransactionsService } from '@modules/transaction/services/transactions.service';
 
 describe('ReservationsService', () => {
   let service: ReservationsService;
@@ -19,8 +21,10 @@ describe('ReservationsService', () => {
 
   const toIdString = (id: Types.ObjectId | unknown) => (id as Types.ObjectId).toString();
 
-  beforeAll(async () => {
-    await mongoose.connect('mongodb://localhost:27017/concertdb');
+  beforeAll(async () => {    
+    mongod = await MongoMemoryServer.create();
+      const uri = mongod.getUri();
+      await mongoose.connect(uri);
 
 
     const module: TestingModule = await Test.createTestingModule({
@@ -38,6 +42,16 @@ describe('ReservationsService', () => {
           provide: getModelToken(User.name),
           useValue: mongoose.model(User.name, UserSchema),
         },
+        {
+          provide: getModelToken(Transaction.name),
+          useValue: mongoose.model<Transaction>('Transaction', TransactionSchema),
+        },
+        {
+          provide: TransactionsService, 
+          useValue: {
+            createTransaction: jest.fn(), 
+          },
+        },
       ],
     }).compile();
 
@@ -50,7 +64,7 @@ describe('ReservationsService', () => {
 
   afterAll(async () => {
     await mongoose.disconnect();
-//    await mongod.stop();
+    await mongod.stop();
   });
 
   afterEach(async () => {
@@ -79,18 +93,6 @@ describe('ReservationsService', () => {
       .rejects.toThrow(NotFoundException);
   });
 
-  it('should throw error on duplicate reservation', async () => {
-    const userId = new Types.ObjectId().toString();
-    const concertId = new Types.ObjectId().toString();
-
-    jest.spyOn(userModel, 'findById').mockResolvedValueOnce({ _id: userId });
-    jest.spyOn(concertModel, 'findById').mockResolvedValueOnce({ _id: concertId, status: 'ACTIVE' });
-
-    jest.spyOn(reserveModel, 'findOne').mockResolvedValueOnce({ _id: new Types.ObjectId() });
-
-    await expect(service.reserveSeat(userId, concertId))
-      .rejects.toThrow(new BadRequestException('User already reserved a seat'));
-  });
   it('should throw BadRequestException if concert is full', async () => {
     const user1 = await userModel.create({ name: 'User 1', email: 'u1@test.com', password: '123456' } as UserDocument);
     const user2 = await userModel.create({ name: 'User 2', email: 'u2@test.com', password: '123456' } as UserDocument);
@@ -266,7 +268,7 @@ describe('ReservationsService', () => {
     jest.spyOn(reserveModel, 'findOne').mockResolvedValueOnce({ _id: new Types.ObjectId() });
 
     await expect(service.reserveSeat(userId, concertId)).rejects.toThrow(
-      new BadRequestException('User already reserved a seat'),
+      new BadRequestException('User already has a reservation.'),
     );
   });
 

@@ -19,7 +19,7 @@ export class Transaction {
   @Prop({ type: String, enum: TransactionAction, required: true })
   action: TransactionAction;
 
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true }) // <-- เพิ่ม userId
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true }) 
   userId: Types.ObjectId;
 
   @Prop({ default: Date.now })

@@ -76,7 +76,6 @@ export class ReservationsService {
     if (!reservation) throw new NotFoundException('Reservation not found');
 
     reservation.status = ReservationStatus.CANCELLED;
-    //reservation.deleted = true;
     await reservation.save();
 
     await this.transactionService.createTransaction({

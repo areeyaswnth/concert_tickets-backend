@@ -8,7 +8,7 @@ import { UsersModule } from '../users/users.module';
 import { User, UserSchema } from '../users/entities/user.entity';
 import { Transaction, TransactionSchema } from '../transaction/entities/transactions.entity';
 import { TransactionsService } from '../transaction/services/transactions.service';
-import { TransactionsController } from '@modules/transaction/controllers/transactions.controlle';
+import { TransactionsController } from '@modules/transaction/controllers/transactions.controller';
 
 @Module({
   imports: [

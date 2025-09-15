@@ -9,10 +9,9 @@ import { Reservation, ReserveDocument } from '@modules/reservations/entities/res
 import { ReservationStatus } from '@common/enum/reserve-status.enum';
 import { TransactionsService } from '@modules/transaction/services/transactions.service';
 import { TransactionAction } from '@common/enum/transaction-action.enum';
-import { use } from 'passport';
 interface PopulatedUser {
   _id: Types.ObjectId;
-  name: string; // หรือ name ถ้า schema ของคุณเป็น name
+  name: string; 
 }
 @Injectable()
 export class ConcertsService {
@@ -47,7 +46,7 @@ export class ConcertsService {
 
     const reservationQuery: any = { deleted: false };
     if (userId) {
-      reservationQuery.userId = new Types.ObjectId(userId); // กรองเฉพาะ user นี้
+      reservationQuery.userId = new Types.ObjectId(userId); 
     }
 
     const reservations = await this.reserveModel
@@ -94,7 +93,6 @@ export class ConcertsService {
     return updated;
   }
   async cancel(id: string, status: ConcertStatus = ConcertStatus.CANCELED) {
-
     const concert = await this.concertModel.findById(id).exec();
 
     if (!concert) {
@@ -105,29 +103,23 @@ export class ConcertsService {
       throw new BadRequestException(`Concert with id ${id} is already cancelled`);
     }
 
-    const reservations = await this.reserveModel.find({
-      concertId: id,
-    }).populate('userId', 'name').exec();
-    console.log(reservations)
-    for (const res of reservations) {
-      try {
-        const user = res.userId as unknown as PopulatedUser;
-        await this.transactionsService.createTransaction({
-          reservationId: String(res._id),
-          userId: user._id.toString(),
-          username: user.name,
-          concertName: concert.name,
-          action: TransactionAction.DELETED_BY_ADMIN,
-        });
+    const reservations = await this.reserveModel
+      .find({ concertId: new Types.ObjectId(id) })
+      .populate('userId', 'name')
+      .exec();
 
-      } catch (error) {
-        console.error(
-          `Failed to create transaction for reservation ${res._id}:`,
-          error.message,
-        );
-      }
+    for (const res of reservations) {
+      const user = res.userId as unknown as PopulatedUser;
+
+      await this.transactionsService.createTransaction({
+        reservationId: String(res._id),
+        userId: user._id.toString(),
+        username: user.name,
+        concertName: concert.name,
+        action: TransactionAction.DELETED_BY_ADMIN,
+      });
     }
-    // อัปเดตให้เป็น cancelled
+
     await this.reserveModel.updateMany(
       {
         concertId: id,
@@ -144,6 +136,7 @@ export class ConcertsService {
     concert.status = status;
     concert.deleted = true;
     await concert.save();
+
     return {
       message: `Concert ${id} soft deleted and reservations cancelled`,
       concert,

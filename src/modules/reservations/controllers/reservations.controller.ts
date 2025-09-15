@@ -23,31 +23,12 @@ export class ReservationsController {
   async cancelReserve(@Param('userId') userId: string, @Param('concertId') concertId: string) {
     return this.reservationsService.cancelReserve(userId, concertId);
   }
-  
+
   @Roles(UserRole.ADMIN)
   @Get('dashboard')
   async getDashboardStats() {
     return this.reservationsService.getDashboardStats();
   }
-  // @Get('')
-  // async listReservation(
-  //   @Req() req: AuthRequest, // <-- ใช้ interface ใหม่
-  //   @Query('page') page?: number,
-  //   @Query('limit') limit?: number,
-  //   @Query('admin') admin?: string,
-  // ) {
-  //   const userId = req.user?.id;
-  //   const isAdmin = admin === 'true';
-
-  //   if (isAdmin) {
-  //     return this.reservationsService.getListReservation(page, limit);
-  //   } else {
-  //     if (!userId) {
-  //       throw new BadRequestException('User not found');
-  //     }
-  //     return this.reservationsService.getUserReservations(userId);
-  //   }
-  // }
 
 
 }

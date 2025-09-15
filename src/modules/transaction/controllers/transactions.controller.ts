@@ -1,8 +1,8 @@
 import { BadRequestException, Body, Controller, Delete, Get, NotFoundException, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { TransactionsService } from '../services/transactions.service';
-import { JwtAuthGuard } from '../../../modules/users/jwt-auth.guard';
-import { Roles, RolesGuard } from '../../../modules/users/roles.guard';
-import { UserRole } from '../../../common/enum/user-role.enum';
+import { JwtAuthGuard } from '../../users/jwt-auth.guard';
+import { RolesGuard } from '../../users/roles.guard';
+
 interface AuthRequest extends Request {
   user?: {
     userId: string;

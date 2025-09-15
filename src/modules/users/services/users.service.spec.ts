@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
 import { getModelToken } from '@nestjs/mongoose';
 import { User, UserDocument, UserSchema } from '../entities/user.entity';
-import { JwtService } from '@nestjs/jwt';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose, { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
@@ -17,8 +16,7 @@ describe('UsersService (integration with real DB)', () => {
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
     const uri = mongod.getUri();
-
-    await mongoose.connect('mongodb://localhost:27017/concertdb');
+    await mongoose.connect(uri);
 
 
     const module: TestingModule = await Test.createTestingModule({

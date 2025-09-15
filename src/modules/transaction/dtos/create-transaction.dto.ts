@@ -20,5 +20,5 @@ export class CreateTransactionDto {
 
   @IsMongoId()
   @IsNotEmpty()
-  userId: string; // <-- เพิ่มตรงนี้
+  userId: string; 
 }
