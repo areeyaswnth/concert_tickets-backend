@@ -23,7 +23,7 @@ export class Concert {
   status: ConcertStatus;
 
   @Prop({ default: false })
-  deleted: boolean; // <-- soft delete flag
+  deleted: boolean; 
 }
 
 export const ConcertSchema = SchemaFactory.createForClass(Concert);

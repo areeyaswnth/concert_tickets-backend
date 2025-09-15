@@ -7,14 +7,12 @@ import { UpdateConcertDto } from '../dtos/update-concert.dto';
 import { ConcertStatus } from '../../../common/enum/concert-status.enum';
 import { Reservation, ReserveDocument } from '@modules/reservations/entities/reservations.entity';
 import { ReservationStatus } from '@common/enum/reserve-status.enum';
-import { User, UserDocument } from '@modules/users/entities/user.entity';
 
 @Injectable()
 export class ConcertsService {
   constructor(
     @InjectModel(Concert.name) private concertModel: Model<ConcertDocument>,
     @InjectModel(Reservation.name) private reserveModel: Model<ReserveDocument>,
-    @InjectModel(User.name) private userModel: Model<UserDocument>,
 
   ) { }
 
@@ -31,7 +29,6 @@ async findAll(userId?: string, page = 1, limit = 10) {
 
   const skip = (page - 1) * limit;
 
-  // filter deleted = false
   const query = { deleted: false } as any;
 
   const listConcert = await this.concertModel
@@ -102,7 +99,6 @@ async findAll(userId?: string, page = 1, limit = 10) {
       throw new BadRequestException(`Concert with id ${id} is already cancelled`);
     }
 
-    // soft delete
     concert.status = status;
     concert.deleted = true;
     await concert.save();

@@ -22,7 +22,6 @@ export class Reservation {
   })
   status: ReservationStatus;
 
-  // soft delete
   @Prop({ type: Boolean, default: false })
   deleted: boolean;
 }

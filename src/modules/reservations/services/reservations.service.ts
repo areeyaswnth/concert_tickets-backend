@@ -6,7 +6,8 @@ import { Concert, ConcertDocument } from '../../../modules/concerts/entities/con
 import { ReservationStatus } from '@common/enum/reserve-status.enum';
 import { ConcertStatus } from '../../../common/enum/concert-status.enum';
 import { User, UserDocument } from '../../../modules/users/entities/user.entity';
-import { Transaction, TransactionAction, TransactionDocument } from '../entities/transactions.entity';
+import { Transaction, TransactionAction, TransactionDocument } from '../../transaction/entities/transactions.entity';
+import { TransactionsService } from '@modules/transaction/services/transactions.service';
 
 @Injectable()
 export class ReservationsService {
@@ -14,10 +15,11 @@ export class ReservationsService {
     @InjectModel(Reservation.name) private reserveModel: Model<ReserveDocument>,
     @InjectModel(Concert.name) private concertModel: Model<ConcertDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
-     @InjectModel(Transaction.name) private transactionModel: Model<TransactionDocument>,
+    @InjectModel(Transaction.name) private transactionsModel: Model<TransactionDocument>,
+    private readonly transactionService: TransactionsService,
+  ) {}
 
-  ) { }
- async reserveSeat(userId: string, concertId: string) {
+  async reserveSeat(userId: string, concertId: string) {
     const user = await this.userModel.findById(userId);
     if (!user) throw new NotFoundException('User not found');
 
@@ -39,7 +41,9 @@ export class ReservationsService {
 
     const existing = await this.reserveModel.findOne({ userId, concertId });
     if (existing && existing.status === ReservationStatus.CANCELLED) {
-      throw new BadRequestException('Cannot reserve again. User has previously cancelled this seat.');
+      throw new BadRequestException(
+        'Cannot reserve again. User has previously cancelled this seat.',
+      );
     }
     if (existing && existing.status !== ReservationStatus.CANCELLED) {
       throw new BadRequestException('User already has a reservation.');
@@ -47,52 +51,40 @@ export class ReservationsService {
 
     const reserve = new this.reserveModel({ userId, concertId });
     await reserve.save();
-    await concert.save();
 
-    // สร้าง transaction
-    const transaction = new this.transactionModel({
-      reservationId: reserve._id,
+    await this.transactionService.createTransaction({
+      reservationId: String(reserve._id),
       username: user.name,
       concertName: concert.name,
       action: TransactionAction.CONFIRMED,
     });
-    await transaction.save();
 
     return reserve;
   }
-async cancelReserve(userId: string, concertId: string) {
-  const user = await this.userModel.findById(userId);
-  if (!user) throw new NotFoundException('User not found');
 
-  const concert = await this.concertModel.findById(concertId);
-  if (!concert) throw new NotFoundException('Concert not found');
+  async cancelReserve(userId: string, concertId: string) {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
 
-  // หา reservation เดิม
-  const reserve = await this.reserveModel.findOne({ userId, concertId });
-  if (!reserve) throw new NotFoundException('Reservation not found');
+    const concert = await this.concertModel.findById(concertId);
+    if (!concert) throw new NotFoundException('Concert not found');
 
-  // ถ้าเคย cancel แล้วก็ return ข้อมูลเดิม
-  if (reserve.status === ReservationStatus.CANCELLED) {
-    return { message: 'Reservation already cancelled', reservation: reserve };
+    const reservation = await this.reserveModel.findOne({ userId, concertId });
+    if (!reservation) throw new NotFoundException('Reservation not found');
+
+    reservation.status = ReservationStatus.CANCELLED;
+    //reservation.deleted = true;
+    await reservation.save();
+
+    await this.transactionService.createTransaction({
+      reservationId: String(reservation._id),
+      username: user.name,
+      concertName: concert.name,
+      action: TransactionAction.CANCELLED,
+    });
+
+    return reservation;
   }
-
-  // เปลี่ยน status เป็น CANCELLED
-  reserve.status = ReservationStatus.CANCELLED;
-  await reserve.save();
-
-  // สร้าง transaction อ้างอิง reservation เดิม
-  const transaction = new this.transactionModel({
-    reservationId: reserve._id,
-    username: user.name,
-    concertName: concert.name,
-    action: TransactionAction.CANCELLED,
-  });
-  await transaction.save();
-
-  return { message: 'Reservation cancelled', reservation: reserve };
-}
-
-
 
   async getUserReservations(userId: string) {
     const user = await this.userModel.findById(userId);
@@ -103,18 +95,19 @@ async cancelReserve(userId: string, concertId: string) {
   async getListReservation(page = 1, limit = 10) {
     page = Number(page);
     limit = Number(limit);
-
     if (page < 1) page = 1;
     if (limit < 1) limit = 10;
 
     const skip = (page - 1) * limit;
 
-    const listReservation = await this.reserveModel.find()
+    const listReservation = await this.reserveModel
+      .find()
       .skip(skip)
       .limit(limit)
       .populate('userId', 'name')
       .populate('concertId', 'name')
       .exec();
+
     const total = await this.reserveModel.countDocuments();
 
     return {
@@ -127,31 +120,22 @@ async cancelReserve(userId: string, concertId: string) {
       },
     };
   }
-  
 
-async getUserTransactions(userId: string, page = 1, limit = 10) {
-  return this.transactionModel
-    .find({ createdBy: userId }) // หรือใช้ { username: ... } ถ้า schema ไม่มี createdBy
-    .skip((page - 1) * limit)
-    .limit(limit)
-    .exec();
-}
-
-async getAllTransactions(page = 1, limit = 10) {
-  return this.transactionModel
-    .find()
-    .skip((page - 1) * limit)
-    .limit(limit)
-    .exec();
-}
   async getDashboardStats() {
-    const concerts = await this.concertModel.find().exec();
-    const totalSeats = concerts.reduce((sum, c) => sum + (c.maxSeats ?? 0), 0);
+    const concerts = await this.concertModel.find({
+      status: { $ne: ConcertStatus.CANCELED }
+    }
+    ).exec();
+    const totalSeats = concerts.reduce(
+      (sum, c) => sum + (c.maxSeats ?? 0),
+      0,
+    );
     const reservedCount = await this.reserveModel.countDocuments({
       status: ReservationStatus.CONFIRMED,
     });
     const cancelledCount = await this.reserveModel.countDocuments({
       status: ReservationStatus.CANCELLED,
+      deleted: false
     });
 
     return {

@@ -11,6 +11,7 @@ import { ConcertStatus } from '../../../common/enum/concert-status.enum';
 import { ReservationStatus } from '../../../common/enum/reserve-status.enum';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { User, UserDocument, UserSchema } from '@modules/users/entities/user.entity';
+import { Transaction, TransactionDocument, TransactionSchema } from '@modules/transaction/entities/transactions.entity';
 
 describe('ConcertsService', () => {
   let service: ConcertsService;
@@ -18,6 +19,7 @@ describe('ConcertsService', () => {
   let concertModel: Model<ConcertDocument>;
   let reserveModel: Model<ReserveDocument>;
   let userModel: Model<UserDocument>;
+  let transactionModel: Model<TransactionDocument>;
   interface ConcertWithReservation {
     _id: string;
     name: string;
@@ -47,7 +49,12 @@ describe('ConcertsService', () => {
         {
           provide: getModelToken(User.name),
           useValue: mongoose.model(User.name, UserSchema),
-        },
+        }, 
+        {
+          provide: getModelToken(Transaction.name),
+          useValue: mongoose.model(Transaction.name,TransactionSchema)as unknown as Model<TransactionDocument>,
+        }
+
       ],
     }).compile();
 
@@ -55,6 +62,7 @@ describe('ConcertsService', () => {
     concertModel = module.get<Model<ConcertDocument>>(getModelToken(Concert.name));
     reserveModel = module.get<Model<ReserveDocument>>(getModelToken(Reservation.name));
     userModel = module.get<Model<UserDocument>>(getModelToken(User.name));
+    transactionModel = module.get<Model<TransactionDocument>>(getModelToken(Transaction.name));
 
   });
 
@@ -66,6 +74,8 @@ describe('ConcertsService', () => {
     await concertModel.deleteMany({});
     await reserveModel.deleteMany({});
     await userModel.deleteMany({})
+
+    await transactionModel.deleteMany();
   });
 
   it('should create a concert', async () => {

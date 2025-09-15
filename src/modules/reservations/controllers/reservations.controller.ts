@@ -19,7 +19,6 @@ export class ReservationsController {
   async reserveSeat(@Param('userId') userId: string, @Param('concertId') concertId: string) {
     return this.reservationsService.reserveSeat(userId, concertId);
   }
-  //  @Roles(UserRole.ADMIN)
   @Delete(':userId/:concertId')
   async cancelReserve(@Param('userId') userId: string, @Param('concertId') concertId: string) {
     return this.reservationsService.cancelReserve(userId, concertId);
@@ -48,28 +47,6 @@ export class ReservationsController {
   //     return this.reservationsService.getUserReservations(userId);
   //   }
   // }
-
-
-
- @Get('transactions')
-  async listTransactions(
-    @Req() req: AuthRequest,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-    @Query('admin') admin?: string,
-  ) {
-    const userId = req.user?.id;
-    const isAdmin = admin === 'true';
-
-    if (isAdmin) {
-      return this.reservationsService.getAllTransactions(page, limit);
-    } else {
-      if (!userId) {
-        throw new BadRequestException('User not found');
-      }
-      return this.reservationsService.getUserTransactions(userId, page, limit);
-    }
-  }
 
 
 }

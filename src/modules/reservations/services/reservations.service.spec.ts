@@ -20,9 +20,8 @@ describe('ReservationsService', () => {
   const toIdString = (id: Types.ObjectId | unknown) => (id as Types.ObjectId).toString();
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    const uri = mongod.getUri();
-    await mongoose.connect(uri);
+    await mongoose.connect('mongodb://localhost:27017/concertdb');
+
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -51,7 +50,7 @@ describe('ReservationsService', () => {
 
   afterAll(async () => {
     await mongoose.disconnect();
-    await mongod.stop();
+//    await mongod.stop();
   });
 
   afterEach(async () => {
