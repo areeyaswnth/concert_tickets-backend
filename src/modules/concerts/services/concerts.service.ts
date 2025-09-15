@@ -104,10 +104,10 @@ export class ConcertsService {
     }
 
     const reservations = await this.reserveModel
-      .find({ concertId: new Types.ObjectId(id) })
+      .find({ concertId: id })
       .populate('userId', 'name')
       .exec();
-
+      console.log(reservations)
     for (const res of reservations) {
       const user = res.userId as unknown as PopulatedUser;
 
