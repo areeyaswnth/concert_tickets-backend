@@ -5,7 +5,7 @@ import { Roles, RolesGuard } from '../../../modules/users/roles.guard';
 import { UserRole } from '../../../common/enum/user-role.enum';
 interface AuthRequest extends Request {
   user?: {
-    id: string;
+    userId: string;
     role?: string;
   };
 }
@@ -23,18 +23,19 @@ export class TransactionsController {
     @Query('limit') limit?: number,
     @Query('admin') admin?: string,
   ) {
-    const userId = req.user?.id;
     const isAdmin = admin === 'true';
 
-    if (isAdmin) {
-      return this.TransactionsService.getAllTransactions(page, limit);
-    } else {
-      if (!userId) {
-        throw new BadRequestException('User not found');
-      }
-      return this.TransactionsService.getUserTransactions(userId, page, limit);
-    }
-  }
 
+ const userId = req.user?.userId;
+  const userRole = req.user?.role;
+  const isAdminQuery = admin === 'true';
+
+  if (userRole === 'admin' && isAdminQuery) {
+    return this.TransactionsService.getAllTransactions(page, limit);
+  } else {
+    if (!userId) throw new BadRequestException('User not found');
+    return this.TransactionsService.getUserTransactions(userId, page, limit);
+  }
+  }
 
 }

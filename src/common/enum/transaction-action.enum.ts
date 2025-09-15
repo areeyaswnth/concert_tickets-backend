@@ -1,0 +1,5 @@
+export enum TransactionAction {
+  CONFIRMED = 'CONFIRMED',
+  CANCELLED = 'CANCELLED',
+  DELETED_BY_ADMIN ='DELETED_BY_ADMIN'
+}

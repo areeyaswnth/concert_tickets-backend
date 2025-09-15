@@ -1,12 +1,9 @@
+import { TransactionAction } from '@common/enum/transaction-action.enum';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
 export type TransactionDocument = Transaction & Document;
 
-export enum TransactionAction {
-  CONFIRMED = 'CONFIRMED',
-  CANCELLED = 'CANCELLED',
-}
 
 @Schema({ timestamps: true })
 export class Transaction {
@@ -22,8 +19,12 @@ export class Transaction {
   @Prop({ type: String, enum: TransactionAction, required: true })
   action: TransactionAction;
 
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true }) // <-- เพิ่ม userId
+  userId: Types.ObjectId;
+
   @Prop({ default: Date.now })
   createdAt: Date;
 }
+
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);

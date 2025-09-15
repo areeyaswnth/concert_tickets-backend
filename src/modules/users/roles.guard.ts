@@ -21,7 +21,6 @@ export class RolesGuard implements CanActivate {
     if (!user) throw new ForbiddenException('No user info in request');
 
     const dbUser = await this.usersService.findOne(user.userId);
-    console.log(dbUser.role)
     if (!dbUser || !requiredRoles.includes(dbUser.role)) {
       throw new ForbiddenException('You do not have permission (role)');
     }

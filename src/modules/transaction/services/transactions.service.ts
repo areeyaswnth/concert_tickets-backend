@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Transaction, TransactionDocument, TransactionAction } from '../entities/transactions.entity';
+import { Transaction, TransactionDocument} from '../entities/transactions.entity';
 import { CreateTransactionDto } from '../dtos/create-transaction.dto';
 @Injectable()
 export class TransactionsService {
@@ -45,9 +45,9 @@ export class TransactionsService {
     async getUserTransactions(userId: string, page = 1, limit = 10) {
         const skip = (page - 1) * limit;
         const total = await this.transactionModel.countDocuments({ userId });
-        if (total === 0) {
-            throw new NotFoundException('No transactions found for this user');
-        }
+        // if (total === 0) {
+        //     throw new NotFoundException('No transactions found for this user');
+        // }
 
         const transactions = await this.transactionModel
             .find({ userId })

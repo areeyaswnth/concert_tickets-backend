@@ -6,8 +6,9 @@ import { Concert, ConcertDocument } from '../../../modules/concerts/entities/con
 import { ReservationStatus } from '@common/enum/reserve-status.enum';
 import { ConcertStatus } from '../../../common/enum/concert-status.enum';
 import { User, UserDocument } from '../../../modules/users/entities/user.entity';
-import { Transaction, TransactionAction, TransactionDocument } from '../../transaction/entities/transactions.entity';
+import { Transaction, TransactionDocument } from '../../transaction/entities/transactions.entity';
 import { TransactionsService } from '@modules/transaction/services/transactions.service';
+import { TransactionAction } from '@common/enum/transaction-action.enum';
 
 @Injectable()
 export class ReservationsService {
@@ -58,6 +59,7 @@ export class ReservationsService {
       username: user.name,
       concertName: concert.name,
       action: TransactionAction.CONFIRMED,
+      userId:userId
     });
 
     return reserve;
@@ -82,6 +84,7 @@ export class ReservationsService {
       username: user.name,
       concertName: concert.name,
       action: TransactionAction.CANCELLED,
+      userId:userId
     });
 
     return reservation;

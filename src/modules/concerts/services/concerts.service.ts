@@ -7,72 +7,78 @@ import { UpdateConcertDto } from '../dtos/update-concert.dto';
 import { ConcertStatus } from '../../../common/enum/concert-status.enum';
 import { Reservation, ReserveDocument } from '@modules/reservations/entities/reservations.entity';
 import { ReservationStatus } from '@common/enum/reserve-status.enum';
-
+import { TransactionsService } from '@modules/transaction/services/transactions.service';
+import { TransactionAction } from '@common/enum/transaction-action.enum';
+import { use } from 'passport';
+interface PopulatedUser {
+  _id: Types.ObjectId;
+  name: string; // หรือ name ถ้า schema ของคุณเป็น name
+}
 @Injectable()
 export class ConcertsService {
   constructor(
     @InjectModel(Concert.name) private concertModel: Model<ConcertDocument>,
     @InjectModel(Reservation.name) private reserveModel: Model<ReserveDocument>,
-
+    private readonly transactionsService: TransactionsService,
   ) { }
 
   async create(dto: CreateConcertDto) {
     const concert = new this.concertModel(dto);
     return concert.save();
   }
-async findAll(userId?: string, page = 1, limit = 10) {
-  page = Number(page);
-  limit = Number(limit);
+  async findAll(userId?: string, page = 1, limit = 10) {
+    page = Number(page);
+    limit = Number(limit);
 
-  if (page < 1) page = 1;
-  if (limit < 1) limit = 10;
+    if (page < 1) page = 1;
+    if (limit < 1) limit = 10;
 
-  const skip = (page - 1) * limit;
+    const skip = (page - 1) * limit;
 
-  const query = { deleted: false } as any;
+    const query = { deleted: false } as any;
 
-  const listConcert = await this.concertModel
-    .find(query)
-    .skip(skip)
-    .limit(limit)
-    .exec();
+    const listConcert = await this.concertModel
+      .find(query)
+      .skip(skip)
+      .limit(limit)
+      .exec();
 
-  const concertCount = await this.concertModel.countDocuments(query).exec();
+    const concertCount = await this.concertModel.countDocuments(query).exec();
 
-  const reservationQuery: any = { deleted: false };
-  if (userId) {
-    reservationQuery.userId = new Types.ObjectId(userId); // กรองเฉพาะ user นี้
-  }
+    const reservationQuery: any = { deleted: false };
+    if (userId) {
+      reservationQuery.userId = new Types.ObjectId(userId); // กรองเฉพาะ user นี้
+    }
 
-  const reservations = await this.reserveModel
-    .find(reservationQuery)
-    .select('concertId _id status')
-    .exec();
+    const reservations = await this.reserveModel
+      .find(reservationQuery)
+      .select('concertId _id status')
+      .exec();
 
-  const reservationMap = new Map(
-    reservations.map((r) => [r.concertId.toString(), r])
-  );
+    const reservationMap = new Map(
+      reservations.map((r) => [r.concertId.toString(), r])
+    );
 
-  const concertsWithReservation = listConcert.map((concert) => {
-    const concertId = String(concert._id);
-    const res = reservationMap.get(concertId);
+    const concertsWithReservation = listConcert.map((concert) => {
+      const concertId = String(concert._id);
+      const res = reservationMap.get(concertId);
+      return {
+        ...concert.toObject(),
+        reservationId: res?._id ?? null,
+        reservationStatus: res?.status ?? null,
+      };
+    });
+
     return {
-      ...concert.toObject(),
-      reservationId: res?._id ?? null,
-      reservationStatus: res?.status ?? null,
+      data: concertsWithReservation,
+      meta: {
+        total: concertCount,
+        page,
+        limit,
+        totalPages: Math.ceil(concertCount / limit),
+      },
     };
-  });
-
-  return {
-    data: concertsWithReservation,
-    meta: {
-      total: concertCount,
-      page,
-      limit,
-      totalPages: Math.ceil(concertCount / limit),
-    },
-  };
-}
+  }
 
 
 
@@ -87,8 +93,8 @@ async findAll(userId?: string, page = 1, limit = 10) {
     if (!updated) throw new NotFoundException('Concert not found');
     return updated;
   }
-
   async cancel(id: string, status: ConcertStatus = ConcertStatus.CANCELED) {
+
     const concert = await this.concertModel.findById(id).exec();
 
     if (!concert) {
@@ -99,31 +105,51 @@ async findAll(userId?: string, page = 1, limit = 10) {
       throw new BadRequestException(`Concert with id ${id} is already cancelled`);
     }
 
-    concert.status = status;
-    concert.deleted = true;
-    await concert.save();
+    const reservations = await this.reserveModel.find({
+      concertId: id,
+    }).populate('userId', 'name').exec();
+    console.log(reservations)
+    for (const res of reservations) {
+      try {
+        const user = res.userId as unknown as PopulatedUser;
+        await this.transactionsService.createTransaction({
+          reservationId: String(res._id),
+          userId: user._id.toString(),
+          username: user.name,
+          concertName: concert.name,
+          action: TransactionAction.DELETED_BY_ADMIN,
+        });
 
-    const result = await this.reserveModel.updateMany(
-
+      } catch (error) {
+        console.error(
+          `Failed to create transaction for reservation ${res._id}:`,
+          error.message,
+        );
+      }
+    }
+    // อัปเดตให้เป็น cancelled
+    await this.reserveModel.updateMany(
       {
-        concertId: new Types.ObjectId(id),
-        status: ReservationStatus.CONFIRMED
+        concertId: id,
+        status: ReservationStatus.CONFIRMED,
       },
       {
         $set: {
           status: ReservationStatus.CANCELLED,
           deleted: true,
-        }
-      }
+        },
+      },
     );
 
+    concert.status = status;
+    concert.deleted = true;
+    await concert.save();
     return {
       message: `Concert ${id} soft deleted and reservations cancelled`,
       concert,
-      reservationsUpdatedCount: result.modifiedCount,
+      reservationsUpdatedCount: reservations.length,
     };
   }
-
 
   async remove(id: string) {
     const deleted = await this.concertModel.findByIdAndDelete(id);

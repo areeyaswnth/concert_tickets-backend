@@ -1,5 +1,5 @@
+import { TransactionAction } from '@common/enum/transaction-action.enum';
 import { IsEnum, IsMongoId, IsNotEmpty, IsString } from 'class-validator';
-import { TransactionAction } from '../entities/transactions.entity';
 
 export class CreateTransactionDto {
   @IsMongoId()
@@ -17,4 +17,8 @@ export class CreateTransactionDto {
   @IsEnum(TransactionAction)
   @IsNotEmpty()
   action: TransactionAction;
+
+  @IsMongoId()
+  @IsNotEmpty()
+  userId: string; // <-- เพิ่มตรงนี้
 }
