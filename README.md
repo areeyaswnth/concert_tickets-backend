@@ -9,7 +9,7 @@ git clone https://github.com/areeyaswnth/concert_tickets-backend.git
 cd concert_tickets-backend
 
 # Copy environment file
-cp .env.local .env
+cp .env.example .env.local
 
 # Install dependencies
 npm install

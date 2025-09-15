@@ -15,7 +15,7 @@ import { ReservationsModule } from './modules/reservations/reservations.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
-        uri: "mongodb://mongodb:27017/concertdb",
+        uri: configService.get<string>('MONGODB_URI') || 'mongodb://mongodb:27017/concertdb',
       }),
     }),
 
