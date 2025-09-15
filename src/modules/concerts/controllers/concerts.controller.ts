@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { ConcertsService } from '../services/concerts.service';
 import { CreateConcertDto } from '../dtos/create-concert.dtos';
 import { UpdateConcertDto } from '../dtos/update-concert.dto';

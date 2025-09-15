@@ -20,6 +20,7 @@ export class ReservationsService {
   ) {}
 
   async reserveSeat(userId: string, concertId: string) {
+  
     const user = await this.userModel.findById(userId);
     if (!user) throw new NotFoundException('User not found');
 
