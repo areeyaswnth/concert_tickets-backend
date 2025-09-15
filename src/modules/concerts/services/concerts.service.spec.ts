@@ -67,7 +67,6 @@ describe('ConcertsService', () => {
     await transactionModel.deleteMany({});
   });
 
-  // ตัวอย่าง test case
   it('should create a concert', async () => {
     const concert = await service.create({
       name: 'Concert Test',
@@ -78,5 +77,4 @@ describe('ConcertsService', () => {
     expect(concert.name).toBe('Concert Test');
   });
 
-  // เพิ่ม test อื่น ๆ ตามที่คุณมีอยู่เดิม
 });
