@@ -270,3 +270,18 @@ npm run test
    - Handle invalid IDs gracefully.
    - Ensure proper exceptions are thrown for missing entities or invalid operations.
 
+## 1) When data is intensive and traffic increases
+- **Pagination & Lazy Loading** → Do not load all data at once, fetch only the required page.
+- **Caching** → Use CDN to reduce latency and cache static or less frequently changing data such as the concert list.
+- **Database Optimization** → Write efficient queries and optimize logic to handle high-traffic scenarios.
+- **Load Balancing & Horizontal Scaling** → Distribute traffic across multiple servers.
+- **Asynchronous Processing** → Offload non-critical tasks to a message queue to prevent blocking main processes.
+
+---
+
+## 2) Handling many users reserving tickets at the same time (Concurrency Control)
+- **Database Transaction** → Ensure atomic operations to prevent overselling seats.
+- **Seat Locking System** → Temporarily lock seats when a user starts the reservation. If payment is not completed within a specific timeframe, release the seats back to the pool.
+- **Optimistic Concurrency Control** → Use fields like `availableSeats` and update with conditions (e.g., `WHERE availableSeats > 0`) to avoid race conditions.
+- **Queue System** → In high-demand concerts, use a queue to process reservations in batches, ensuring fairness and preventing system overload.
+- **Real-time Updates** → Use WebSocket/Socket.IO to update seat availability in real-time so users always see the latest status.
