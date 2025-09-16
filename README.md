@@ -270,6 +270,7 @@ npm run test
    - Handle invalid IDs gracefully.
    - Ensure proper exceptions are thrown for missing entities or invalid operations.
 
+# My Opinion To Improve Code
 ## 1) When data is intensive and traffic increases
 - **Pagination & Lazy Loading** → Do not load all data at once, fetch only the required page.
 - **Caching** → Use CDN to reduce latency and cache static or less frequently changing data such as the concert list.
